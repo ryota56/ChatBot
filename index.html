@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#1a1a2e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>キャラクターチャット</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/chat.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1><i class="fas fa-comments"></i> キャラクターチャット</h1>
+      <p class="subtitle">あなたの好みのキャラクターと会話してみましょう</p>
+    </header>
+
+    <!-- トップ画面（スライダー） -->
+    <section class="slider-container">
+      <button class="slider-arrow prev">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <div class="slider">
+        <div class="slide">
+          <img
+            src="images/characters/1.png"
+            alt="キャラクター「ryota」"
+            data-character="1"
+          />
+        </div>
+        <div class="slide">
+          <img
+            src="images/characters/2.jpg"
+            alt="キャラクター「新人A」"
+            data-character="2"
+          />
+        </div>
+        <div class="slide">
+          <img
+            src="images/characters/3.png"
+            alt="キャラクター「天使の猫ちゃん」"
+            data-character="3"
+          />
+        </div>
+      </div>
+      <button class="slider-arrow next">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+      <div class="slider-indicators">
+        <span class="indicator active"></span>
+        <span class="indicator"></span>
+        <span class="indicator"></span>
+      </div>
+    </section>
+
+    <!-- チャット画面 -->
+    <section class="chat-container">
+      <div class="chat-header">
+        <img
+          id="selected-character"
+          src="images/characters/1.png"
+          alt="キャラクター「ryota」"
+        />
+      </div>
+      <div class="chat-messages"></div>
+      <div class="chat-input">
+        <input
+          type="text"
+          id="message-input"
+          placeholder="メッセージを入力..."
+        />
+        <button id="send-message"><i class="fas fa-paper-plane"></i></button>
+      </div>
+      <div class="chat-footer">
+        <div class="character-switcher">
+          <p>他のキャラクターと会話する：</p>
+          <div class="character-thumbnails">
+            <img
+              src="images/characters/1.png"
+              alt="キャラクター「ryota」"
+              data-character="1"
+              class="character-thumb active"
+            />
+            <img
+              src="images/characters/2.jpg"
+              alt="キャラクター「新人A」"
+              data-character="2"
+              class="character-thumb"
+            />
+            <img
+              src="images/characters/3.png"
+              alt="キャラクター「天使の猫ちゃん」"
+              data-character="3"
+              class="character-thumb"
+            />
+          </div>
+        </div>
+        <button class="back-button" id="back-to-selection">
+          <i class="fas fa-chevron-left"></i>
+          <span class="btn-text">選択画面に戻る</span>
+        </button>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <p>
+        &copy; 2025 キャラクターチャット -<br />
+        あなたの好みのキャラクターと会話できるアプリ
+      </p>
+    </footer>
+
+    <script src="js/slider.js"></script>
+    <script src="js/chat.js"></script>
+  </body>
+</html>

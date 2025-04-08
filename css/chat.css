@@ -1,0 +1,500 @@
+/* ビューポート高さ変数（iOS対応） */
+:root {
+  --vh: 1vh;
+}
+
+/* チャットコンテナ */
+.chat-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background: linear-gradient(135deg, #2a2a3a 0%, #1a1a2e 100%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  margin-top: 20px;
+  display: none; /* 初期状態は非表示 */
+  opacity: 0; /* フェードイン用 */
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+.chat-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96e6a1);
+  z-index: 10;
+}
+
+.chat-container.visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* チャットヘッダー */
+.chat-header {
+  position: sticky;
+  top: 0;
+  background: rgba(30, 30, 45, 0.9);
+  padding: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  border-radius: 12px 12px 0 0;
+}
+
+/* チャットフッター */
+.chat-footer {
+  padding: 20px;
+  background: rgba(30, 30, 45, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 0;
+  border-radius: 0 0 12px 12px;
+  backdrop-filter: blur(10px);
+}
+
+.character-switcher {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.character-switcher p {
+  margin-bottom: 15px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+
+.character-thumbnails {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.character-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: contain;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  background-color: rgba(20, 20, 30, 0.8);
+  padding: 5px;
+}
+
+.character-thumb:hover {
+  transform: scale(1.1) translateY(-5px);
+  border-color: #4ecdc4;
+  box-shadow: 0 6px 15px rgba(78, 205, 196, 0.4);
+}
+
+.character-thumb.active {
+  border-color: #4ecdc4;
+  box-shadow: 0 0 15px rgba(78, 205, 196, 0.6);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(78, 205, 196, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(78, 205, 196, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(78, 205, 196, 0);
+  }
+}
+
+/* 戻るボタン */
+.back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+  color: #fff;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  text-align: center;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.back-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: all 0.5s ease;
+}
+
+.back-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+.back-button:hover::before {
+  left: 100%;
+}
+
+.back-button .btn-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#selected-character {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: contain;
+  border: 3px solid #4ecdc4;
+  box-shadow: 0 0 15px rgba(78, 205, 196, 0.5);
+  transition: all 0.3s ease;
+  background-color: rgba(20, 20, 30, 0.8);
+  padding: 5px;
+}
+
+#selected-character:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(78, 205, 196, 0.7);
+}
+
+/* チャットメッセージエリア */
+.chat-messages {
+  min-height: 400px;
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 20px;
+  background: rgba(20, 20, 30, 0.5);
+  border-radius: 0 0 12px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: #4ecdc4 #2a2a3a;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: #2a2a3a;
+  border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #4ecdc4;
+  border-radius: 10px;
+}
+
+.message {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  animation: messageAppear 0.3s ease-out;
+}
+
+@keyframes messageAppear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message.user {
+  flex-direction: row-reverse;
+}
+
+.message-content {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  margin: 0 10px;
+  position: relative;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.message.bot .message-content {
+  background: linear-gradient(135deg, #3a3a4a 0%, #2a2a3a 100%);
+  color: #fff;
+  border-top-left-radius: 4px;
+}
+
+.message.user .message-content {
+  background: linear-gradient(135deg, #4ecdc4 0%, #45b7d1 100%);
+  color: #fff;
+  border-top-right-radius: 4px;
+}
+
+/* チャット入力エリア */
+.chat-input {
+  display: flex;
+  margin-top: 20px;
+  width: 100%;
+  gap: 10px;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 15px;
+  border: none;
+  border-radius: 25px;
+  background: rgba(40, 40, 55, 0.5);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.chat-input input:focus {
+  outline: none;
+  background: rgba(40, 40, 55, 0.7);
+  box-shadow: 0 0 15px rgba(78, 205, 196, 0.3);
+  border-color: rgba(78, 205, 196, 0.5);
+}
+
+.chat-input input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.chat-input button {
+  width: 60px;
+  height: 53px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4ecdc4 0%, #45b7d1 100%);
+  color: #fff;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-input button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: all 0.5s ease;
+}
+
+.chat-input button:hover {
+  background: linear-gradient(135deg, #45b7d1 0%, #4ecdc4 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(78, 205, 196, 0.5);
+}
+
+.chat-input button:hover::before {
+  left: 100%;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+  .chat-container {
+    margin: 10px;
+    padding: 15px;
+    border-radius: 12px;
+    overflow: visible;
+  }
+
+  .chat-header {
+    padding: 10px;
+  }
+
+  #selected-character {
+    width: 60px;
+    height: 60px;
+  }
+
+  .chat-messages {
+    min-height: 200px;
+    max-height: 300px;
+    padding: 15px;
+  }
+
+  .message-content {
+    max-width: 85%;
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .chat-input {
+    margin-top: 15px;
+    gap: 8px;
+  }
+
+  .chat-input input {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+
+  .chat-input button {
+    width: 45px;
+    height: 42px;
+    font-size: 16px;
+  }
+
+  .chat-footer {
+    padding: 15px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .character-switcher p {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .character-thumbnails {
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 15px;
+  }
+
+  .character-thumb {
+    width: 40px;
+    height: 40px;
+    padding: 3px;
+  }
+
+  .back-button {
+    font-size: 12px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    position: sticky;
+    bottom: 10px;
+    z-index: 100;
+  }
+
+  /* タップ領域を広げて操作しやすくする */
+  .character-thumb,
+  .back-button,
+  .chat-input button {
+    position: relative;
+  }
+
+  .character-thumb::after,
+  .back-button::after,
+  .chat-input button::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    z-index: -1;
+  }
+
+  /* 高さの自動調整により、チャットフッターが常に表示されるようにする */
+  body {
+    min-height: 100vh;
+    height: -webkit-fill-available;
+  }
+
+  html {
+    height: -webkit-fill-available;
+  }
+
+  /* モバイルでの固定表示サポート */
+  .chat-footer {
+    position: sticky;
+    bottom: 0;
+    background: rgba(30, 30, 45, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* 超小型画面対応 */
+@media (max-width: 360px) {
+  .chat-container {
+    padding: 10px;
+  }
+
+  .chat-footer {
+    padding: 10px;
+  }
+
+  .character-thumb {
+    width: 35px;
+    height: 35px;
+  }
+
+  .character-thumbnails {
+    gap: 6px;
+  }
+
+  .back-button {
+    padding: 8px;
+  }
+
+  .back-button .btn-text {
+    max-width: 100px;
+  }
+}
