@@ -1,0 +1,214 @@
+/* エントランスアニメーション */
+.entrance-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.door-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  perspective: 1000px;
+}
+
+.door {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 50%;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  transition: transform 1s cubic-bezier(0.8, 0, 0.2, 1);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+.door-left {
+  left: 0;
+  transform-origin: left;
+  border-right: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.door-right {
+  right: 0;
+  transform-origin: right;
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* パターン背景をCSSで作成 (画像の代わり) */
+.door::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(201, 179, 114, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 179, 114, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.3;
+}
+
+.door::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 50%, rgba(201, 179, 114, 0.05) 0%, rgba(201, 179, 114, 0) 60%);
+  mix-blend-mode: overlay;
+}
+
+.door-handle {
+  position: absolute;
+  top: 50%;
+  height: 80px;
+  width: 20px;
+  background: linear-gradient(to right, #c9b372, #e6d399, #c9b372);
+  border-radius: 5px;
+  box-shadow: 0 0 15px rgba(201, 179, 114, 0.7);
+}
+
+.door-left .door-handle {
+  right: 30px;
+  transform: translateY(-50%);
+}
+
+.door-right .door-handle {
+  left: 30px;
+  transform: translateY(-50%);
+}
+
+.door-logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px;
+  height: 150px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 0 50px rgba(201, 179, 114, 0.5);
+  z-index: 10;
+  border: 2px solid #c9b372;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.door-logo img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+
+.door-open .door-left {
+  transform: rotateY(-110deg);
+}
+
+.door-open .door-right {
+  transform: rotateY(110deg);
+}
+
+.door-open .door-logo {
+  opacity: 1;
+  animation: logoReveal 1s ease-in-out forwards;
+}
+
+@keyframes logoReveal {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 80px rgba(201, 179, 114, 0.8);
+  }
+}
+
+.door-welcome {
+  position: absolute;
+  bottom: 15%;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  color: #c9b372;
+  font-size: 2rem;
+  font-weight: 300;
+  letter-spacing: 5px;
+  text-shadow: 0 0 10px rgba(201, 179, 114, 0.5);
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.5s ease 0.5s;
+}
+
+.door-open .door-welcome {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.entrance-overlay.fade-out {
+  animation: fadeOut 0.6s ease-in-out forwards 1.2s;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+  .door-logo {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .door-welcome {
+    font-size: 1.5rem;
+    letter-spacing: 3px;
+  }
+  
+  .door-handle {
+    height: 60px;
+    width: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .door-logo {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .door-welcome {
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+  }
+  
+  .door-handle {
+    height: 50px;
+    width: 10px;
+  }
+} 
