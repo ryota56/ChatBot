@@ -498,3 +498,52 @@
     max-width: 100px;
   }
 }
+
+/* メッセージ入力中のスタイル */
+.message.loading .message-content {
+  position: relative;
+  overflow: hidden;
+}
+
+.message.loading .message-content::after {
+  content: "...";
+  position: absolute;
+  width: 1em;
+  right: 0;
+  text-align: left;
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%, 20% {
+    content: ".";
+  }
+  40% {
+    content: "..";
+  }
+  60%, 100% {
+    content: "...";
+  }
+}
+
+/* ストリーミングメッセージの最後に点滅カーソル表示 */
+.message.streaming .message-content {
+  position: relative;
+}
+
+.message.streaming .message-content::after {
+  content: "|";
+  position: absolute;
+  margin-left: 2px;
+  opacity: 1;
+  animation: blink 0.7s infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}

@@ -8,6 +8,7 @@
     />
     <meta name="theme-color" content="#1a1a2e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
@@ -121,6 +122,11 @@
     </footer>
 
     <script src="js/slider.js"></script>
-    <script src="js/chat.js"></script>
+    <!-- 設定ファイル読み込み（モジュール未対応ブラウザ向け） -->
+    <script nomodule src="js/config.js"></script>
+    <!-- モジュール対応ブラウザ向けのメインスクリプト -->
+    <script type="module" src="js/chat.js"></script>
+    <!-- モジュール未対応ブラウザ向けのフォールバック -->
+    <script nomodule src="js/chat.js"></script>
   </body>
 </html>
