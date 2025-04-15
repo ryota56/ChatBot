@@ -104,11 +104,14 @@ document.addEventListener('DOMContentLoaded', function () {
   // 送信ボタンの動作設定
   addClickAndTouchEvent(sendButton, sendMessage);
 
-  // エンターキーでも送信可能にする
-  messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
+  // キー入力の処理を変更
+  messageInput.addEventListener('keydown', (e) => {
+    // Shift+Enter または Ctrl+Enter で送信
+    if (e.key === 'Enter' && (e.shiftKey || e.ctrlKey)) {
+      e.preventDefault();
       sendMessage();
     }
+    // 通常のEnterキーは改行を許可（デフォルト動作）
   });
 
   // iOS対応：ビューポート高さの調整

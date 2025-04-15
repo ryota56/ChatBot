@@ -124,11 +124,14 @@ document.addEventListener('DOMContentLoaded', function () {
   // 送信ボタンのクリックイベント
   sendButton.addEventListener('click', sendMessage);
 
-  // エンターキーでも送信できるようにする
-  messageInput.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
+  // キー入力の処理を変更
+  messageInput.addEventListener('keydown', function (e) {
+    // Shift+Enter または Ctrl+Enter で送信
+    if (e.key === 'Enter' && (e.shiftKey || e.ctrlKey)) {
+      e.preventDefault();
       sendMessage();
     }
+    // 通常のEnterキーは改行を許可（デフォルト動作）
   });
 
   // メッセージを送信する関数
