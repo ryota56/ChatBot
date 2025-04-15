@@ -27,7 +27,7 @@ let currentCharacter = {
   id: '1',
   name: 'キャラクター「ryota」',
   image: 'images/characters/1.png',
-  dify_input: 'ryota' // Difyへの入力値
+  dify_input: 'ryota' // Difyの分岐条件に合わせて小文字に戻す
 };
 
 // キャラクター情報
@@ -36,19 +36,19 @@ const characters = {
     id: '1',
     name: 'キャラクター「ryota」',
     image: 'images/characters/1.png',
-    dify_input: 'ryota' // Difyへの入力値
+    dify_input: 'ryota' // Difyの分岐条件に合わせて小文字に戻す
   },
   2: {
     id: '2',
     name: 'キャラクター「新人A」',
     image: 'images/characters/2.jpg',
-    dify_input: '新人A' // Difyへの入力値
+    dify_input: '新人A' // すでに正しい
   },
   3: {
     id: '3',
     name: 'キャラクター「天使の猫ちゃん」',
     image: 'images/characters/3.png',
-    dify_input: '天使の猫' // Difyへの入力値
+    dify_input: '天使の猫' // すでに正しい
   },
 };
 
@@ -103,6 +103,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // 送信ボタンの動作設定
   addClickAndTouchEvent(sendButton, sendMessage);
+  
+  // 定型メッセージボタンにイベント追加
+  document.querySelectorAll('.predefined-message-btn').forEach((btn) => {
+    addClickAndTouchEvent(btn, function () {
+      // ボタンのテキストをメッセージ入力欄に設定
+      messageInput.value = this.textContent;
+      // メッセージを自動送信
+      sendMessage();
+    });
+  });
 
   // キー入力の処理を変更
   messageInput.addEventListener('keydown', (e) => {
@@ -128,6 +138,12 @@ document.addEventListener('DOMContentLoaded', function () {
 function showChat(characterId) {
   const character = characters[characterId];
   if (!character) return;
+
+  console.log("********************* キャラクター選択 *********************");
+  console.log("選択されたキャラクターID:", characterId);
+  console.log("キャラクター情報:", character);
+  console.log("キャラクターのDify input値:", character.dify_input);
+  console.log("***********************************************************");
 
   // スライダーを非表示
   sliderContainer.style.display = 'none';
@@ -236,16 +252,17 @@ async function sendMessage() {
       requestParams.conversation_id = conversationId;
     }
 
-    // デバッグ用
-    console.log("送信するリクエスト:", {
-      url: `${difyConfig.API_ENDPOINT}/chat-messages`,
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${difyConfig.API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: requestParams
+    // デバッグ用：詳細なリクエスト情報
+    console.log("********************* DIFY API リクエスト *********************");
+    console.log("送信URL:", `${difyConfig.API_ENDPOINT}/chat-messages`);
+    console.log("送信メソッド:", "POST");
+    console.log("送信ヘッダー:", {
+      'Authorization': `Bearer ${difyConfig.API_KEY}`,
+      'Content-Type': 'application/json'
     });
+    console.log("キャラクター情報:", currentCharacter);
+    console.log("リクエストボディ:", JSON.stringify(requestParams, null, 2));
+    console.log("***************************************************************");
 
     // Dify APIにリクエスト
     const response = await fetch(`${difyConfig.API_ENDPOINT}/chat-messages`, {
@@ -256,6 +273,12 @@ async function sendMessage() {
       },
       body: JSON.stringify(requestParams)
     });
+
+    // デバッグ用：レスポンスのステータス情報
+    console.log("********************* DIFY API レスポンス *********************");
+    console.log("レスポンスステータス:", response.status);
+    console.log("レスポンスOK:", response.ok);
+    console.log("***************************************************************");
 
     // レスポンスステータスをチェック
     if (!response.ok) {
@@ -365,12 +388,17 @@ async function sendMessage() {
       const responses = mockResponses[characterId] || mockResponses['1'];
       const randomResponse = responses[Math.floor(Math.random() * responses.length)];
       
+      console.log("********************* モックレスポンス（フォールバック）表示 *********************");
+      console.log("キャラクターID:", characterId);
+      console.log("選択されたレスポンス:", randomResponse);
+      console.log("******************************************************************************");
+      
       // モックレスポンスを表示
-      addMessage(randomResponse, 'bot');
+      addMessage("[モックレスポンス] " + randomResponse, 'bot');
       
       // 会話履歴に追加
       conversations[currentCharacter.id].messages.push({
-        content: randomResponse,
+        content: "[モックレスポンス] " + randomResponse,
         type: 'bot'
       });
     }, 1000);
@@ -473,8 +501,8 @@ function updateOrAddBotMessage(content) {
   const streamMessage = document.querySelector('.message.bot.streaming');
   
   if (streamMessage) {
-    // 既存のメッセージを更新
-    streamMessage.querySelector('.message-content').textContent = content;
+    // 既存のメッセージを更新（改行コードを<br>タグに変換）
+    streamMessage.querySelector('.message-content').innerHTML = content.replace(/\n/g, '<br>');
   } else {
     // 新しいメッセージを追加
     const messageElement = document.createElement('div');
@@ -482,7 +510,8 @@ function updateOrAddBotMessage(content) {
     
     const contentElement = document.createElement('div');
     contentElement.classList.add('message-content');
-    contentElement.textContent = content;
+    // 改行コードを<br>タグに変換
+    contentElement.innerHTML = content.replace(/\n/g, '<br>');
     
     const avatarElement = document.createElement('img');
     avatarElement.src = currentCharacter.image;
@@ -505,32 +534,49 @@ function updateOrAddBotMessage(content) {
 
 // ブロッキングレスポンスの処理
 async function handleBlockingResponse(response) {
-  const data = await response.json();
-  
-  if (response.ok) {
-    console.log("APIレスポンス:", data);
+  try {
+    const data = await response.json();
     
-    // 会話IDを保存
-    if (data.conversation_id) {
-      conversations[currentCharacter.id].id = data.conversation_id;
-      console.log("会話ID保存:", currentCharacter.id, data.conversation_id);
+    console.log("********************* DIFY API レスポンス内容 *********************");
+    console.log("レスポンスデータ:", data);
+    console.log("会話ID:", data.conversation_id);
+    console.log("回答内容:", data.answer);
+    console.log("*******************************************************************");
+    
+    if (response.ok) {
+      console.log("APIレスポンス:", data);
+      
+      // 会話IDを保存
+      if (data.conversation_id) {
+        conversations[currentCharacter.id].id = data.conversation_id;
+        console.log("会話ID保存:", currentCharacter.id, data.conversation_id);
+      }
+      
+      // メッセージを表示
+      addMessage(data.answer, 'bot');
+      
+      // 会話履歴に追加
+      conversations[currentCharacter.id].messages.push({
+        content: data.answer,
+        type: 'bot'
+      });
+    } else {
+      console.error('API error:', data);
+      addMessage('エラーが発生しました: ' + (data.message || '不明なエラー'), 'bot');
+      
+      // 会話履歴に追加
+      conversations[currentCharacter.id].messages.push({
+        content: 'エラーが発生しました: ' + (data.message || '不明なエラー'),
+        type: 'bot'
+      });
     }
-    
-    // メッセージを表示
-    addMessage(data.answer, 'bot');
-    
-    // 会話履歴に追加
-    conversations[currentCharacter.id].messages.push({
-      content: data.answer,
-      type: 'bot'
-    });
-  } else {
-    console.error('API error:', data);
-    addMessage('エラーが発生しました: ' + (data.message || '不明なエラー'), 'bot');
+  } catch (error) {
+    console.error('Error:', error);
+    addMessage('申し訳ありません。エラーが発生しました: ' + error.message, 'bot');
     
     // 会話履歴に追加
     conversations[currentCharacter.id].messages.push({
-      content: 'エラーが発生しました: ' + (data.message || '不明なエラー'),
+      content: '申し訳ありません。エラーが発生しました。',
       type: 'bot'
     });
   }
@@ -542,7 +588,8 @@ function addMessage(message, type) {
   const streamingMessage = document.querySelector('.message.bot.streaming');
   if (type === 'bot' && streamingMessage) {
     streamingMessage.classList.remove('streaming');
-    streamingMessage.querySelector('.message-content').textContent = message;
+    // 改行コードをHTMLの<br>タグに変換してからHTMLとして挿入
+    streamingMessage.querySelector('.message-content').innerHTML = message.replace(/\n/g, '<br>');
     return;
   }
   
@@ -551,7 +598,8 @@ function addMessage(message, type) {
 
   const contentElement = document.createElement('div');
   contentElement.classList.add('message-content');
-  contentElement.textContent = message;
+  // 改行コードをHTMLの<br>タグに変換してからHTMLとして挿入
+  contentElement.innerHTML = message.replace(/\n/g, '<br>');
 
   if (type === 'bot') {
     const avatarElement = document.createElement('img');
