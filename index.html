@@ -79,8 +79,8 @@
       </div>
       <div class="chat-messages"></div>
       <div class="predefined-messages">
-        <button class="predefined-message-btn">自己紹介して</button>
-        <button class="predefined-message-btn">あなたは何が詳しいの？</button>
+        <button class="predefined-message-btn"><i class="fas fa-user-circle"></i>自己紹介して</button>
+        <button class="predefined-message-btn"><i class="fas fa-book"></i>あなたは何が詳しいの？</button>
       </div>
       <div class="chat-input">
         <textarea
@@ -90,29 +90,8 @@
         <button id="send-message"><i class="fas fa-paper-plane"></i></button>
       </div>
       <div class="chat-footer">
-        <div class="character-switcher">
-          <p>他のキャラクターと会話する：</p>
-          <div class="character-thumbnails">
-            <img
-              src="images/characters/1.png"
-              alt="キャラクター「ryota」"
-              data-character="1"
-              class="character-thumb active"
-            />
-            <img
-              src="images/characters/2.jpg"
-              alt="キャラクター「新人A」"
-              data-character="2"
-              class="character-thumb"
-            />
-            <img
-              src="images/characters/3.png"
-              alt="キャラクター「天使の猫ちゃん」"
-              data-character="3"
-              class="character-thumb"
-            />
-          </div>
-        </div>
+        <!-- 他のキャラクターと会話する部分はJavaScriptで動的に生成 -->
+        
         <button class="back-button" id="back-to-selection">
           <i class="fas fa-chevron-left"></i>
           <span class="btn-text">選択画面に戻る</span>

@@ -22,31 +22,36 @@ if (typeof difyConfig === 'undefined' && typeof window.DIFY_CONFIG !== 'undefine
 // ユーザーIDを生成
 const USER_ID = "user-" + Math.random().toString(36).substring(2, 15);
 
-// 現在選択されているキャラクター
-let currentCharacter = {
-  id: '1',
-  name: 'キャラクター「ryota」',
-  image: 'images/characters/1.png',
-  dify_input: 'ryota' // Difyの分岐条件に合わせて小文字に戻す
+// 変数を定義
+const characterIds = [1, 2, 3];
+const characterNames = {
+  1: "ryota",
+  2: "新人A",
+  3: "天使な猫",
+};
+const characterImages = {
+  1: "images/characters/1.png",
+  2: "images/characters/2.jpg",
+  3: "images/characters/3.png",
 };
 
 // キャラクター情報
 const characters = {
   1: {
     id: '1',
-    name: 'キャラクター「ryota」',
+    name: 'ryota',
     image: 'images/characters/1.png',
     dify_input: 'ryota' // Difyの分岐条件に合わせて小文字に戻す
   },
   2: {
     id: '2',
-    name: 'キャラクター「新人A」',
+    name: '新人A',
     image: 'images/characters/2.jpg',
     dify_input: '新人A' // すでに正しい
   },
   3: {
     id: '3',
-    name: 'キャラクター「天使の猫ちゃん」',
+    name: '天使な猫',
     image: 'images/characters/3.png',
     dify_input: '天使の猫' // すでに正しい
   },
@@ -61,6 +66,10 @@ let conversations = {
 
 // 選択画面から直接選択したかどうかのフラグ
 let comingFromSelectionScreen = true;
+
+// 状態管理
+let currentCharacterId = 1;
+let conversationHistory = {};
 
 // 初期化関数 - DOMロード完了時に実行
 document.addEventListener('DOMContentLoaded', function () {
@@ -90,14 +99,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // キャラクターサムネイルにイベント追加
-  characterThumbnails.forEach((thumb) => {
-    addClickAndTouchEvent(thumb, function () {
-      const characterId = this.dataset.character;
-      switchCharacter(characterId);
-    });
-  });
-
   // 戻るボタンにイベント追加
   addClickAndTouchEvent(backButton, hideChat);
 
@@ -107,10 +108,20 @@ document.addEventListener('DOMContentLoaded', function () {
   // 定型メッセージボタンにイベント追加
   document.querySelectorAll('.predefined-message-btn').forEach((btn) => {
     addClickAndTouchEvent(btn, function () {
-      // ボタンのテキストをメッセージ入力欄に設定
-      messageInput.value = this.textContent;
-      // メッセージを自動送信
+      // ボタンのテキストを取得（アイコンを除く）
+      const buttonText = this.textContent;
+      
+      // メッセージ入力欄に設定
+      messageInput.value = buttonText;
+      
+      // 自動的に送信
       sendMessage();
+      
+      // ボタンにクリック効果を追加
+      this.classList.add('clicked');
+      setTimeout(() => {
+        this.classList.remove('clicked');
+      }, 300);
     });
   });
 
@@ -128,11 +139,94 @@ document.addEventListener('DOMContentLoaded', function () {
   const setVh = () => {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
+    
+    // スマホ版の場合にチャットコンテナの高さを調整
+    if (window.innerWidth <= 480 && chatContainer.classList.contains('visible')) {
+      // 固定高さではなく、最小高さとして設定
+      chatContainer.style.minHeight = `calc(${vh * 100}px - 20px)`;
+      // メッセージエリアを最下部までスクロール
+      setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }, 100);
+    }
   };
 
   setVh();
-  window.addEventListener('resize', setVh);
+  
+  // リサイズ時の処理頻度を制限
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      setVh();
+      // リサイズ後にメッセージのレイアウトを修正
+      adjustMessageLayout();
+    }, 100);
+  });
+  
+  // モバイルデバイスではスクロール時にも高さを再調整（ツールバーの表示・非表示対策）
+  if ('ontouchstart' in window) {
+    window.addEventListener('scroll', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(setVh, 100);
+    });
+  }
+  
+  // 初期ロード時にメッセージレイアウトを調整
+  adjustMessageLayout();
 });
+
+// メッセージのレイアウトを調整する関数
+function adjustMessageLayout() {
+  // メッセージの最大幅を調整（特にボットメッセージ）
+  const isMobile = window.innerWidth <= 480;
+  const messages = document.querySelectorAll('.message');
+  
+  messages.forEach(message => {
+    const messageContent = message.querySelector('.message-content');
+    if (!messageContent) return;
+    
+    if (message.classList.contains('bot')) {
+      // モバイルデバイスの場合
+      if (isMobile) {
+        // ボットアバターの幅を考慮した最大幅に設定
+        const avatar = message.querySelector('.bot-avatar');
+        const avatarWidth = avatar ? avatar.offsetWidth : 30;
+        const marginRight = avatar ? 8 : 0; // avatarのmargin-right
+        messageContent.style.maxWidth = `calc(100% - ${avatarWidth + marginRight + 10}px)`;
+        
+        // メッセージの内容が長いテキストの場合は折り返しを確実に
+        if (messageContent.scrollWidth > messageContent.clientWidth) {
+          messageContent.style.wordBreak = 'break-word';
+          messageContent.style.whiteSpace = 'pre-wrap';
+        }
+      } else {
+        // デスクトップの場合は最大80%に設定
+        messageContent.style.maxWidth = '80%';
+      }
+    } else if (message.classList.contains('user')) {
+      // ユーザーメッセージは常に最大80%に制限
+      messageContent.style.maxWidth = '80%';
+    }
+  });
+  
+  // アバターが正しく表示されているか確認
+  const avatars = document.querySelectorAll('.bot-avatar');
+  avatars.forEach(avatar => {
+    // 無効なパスや読み込みエラーの場合はデフォルトアバターを設定
+    if (!avatar.src || avatar.src === 'undefined' || avatar.src === '') {
+      avatar.src = 'images/default-avatar.svg';
+    }
+    
+    // 画像読み込みエラー時のフォールバック
+    avatar.onerror = function() {
+      this.src = 'images/default-avatar.svg';
+    };
+  });
+  
+  // スクロール位置を最下部に設定
+  scrollToBottom();
+}
 
 // チャット画面の表示
 function showChat(characterId) {
@@ -148,10 +242,15 @@ function showChat(characterId) {
   // スライダーを非表示
   sliderContainer.style.display = 'none';
 
-  currentCharacter = character;
+  currentCharacterId = characterId;
   selectedCharacterImg.src = character.image;
   chatContainer.classList.add('visible');
-  updateActiveThumbnail();
+  
+  // サムネイル選択部分は非表示にする
+  const characterSwitcher = document.querySelector('.character-switcher');
+  if (characterSwitcher) {
+    characterSwitcher.style.display = 'none';
+  }
 
   // 選択画面から来た場合は会話履歴をリセット
   if (comingFromSelectionScreen) {
@@ -178,16 +277,96 @@ function showChat(characterId) {
     });
   }
 
+  // 他のキャラクターとのチャット切り替え部分を更新
+  createOtherCharactersSection();
+
   // スクロール位置をトップに
   window.scrollTo(0, 0);
+  
+  // モバイルサイズでビューポート高さを再計算
+  if (window.innerWidth <= 480) {
+    const vh = window.innerHeight * 0.01;
+    chatContainer.style.minHeight = `calc(${vh * 100}px - 20px)`;
+    // スクロール位置の初期化
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 100);
+  }
 
   // モバイルデバイスではフォーカスをメッセージ入力欄に
   if (window.innerWidth <= 768) {
     setTimeout(() => {
       // 少し遅延させることでアニメーション後に実行
       messageInput.focus();
+      // メッセージエリアを最下部までスクロール
+      chatMessages.scrollTop = chatMessages.scrollHeight;
     }, 500);
   }
+}
+
+// 他のキャラクターとの会話セクションを作成する関数
+function createOtherCharactersSection() {
+  // 既存のセクションがあれば削除
+  const existingSection = document.querySelector('.other-characters');
+  if (existingSection) {
+    existingSection.remove();
+  }
+  
+  // 新しいセクションを作成
+  const otherCharactersSection = document.createElement('div');
+  otherCharactersSection.className = 'other-characters';
+  
+  const title = document.createElement('p');
+  title.textContent = '他のキャラクターと会話する：';
+  otherCharactersSection.appendChild(title);
+  
+  const thumbnailsContainer = document.createElement('div');
+  thumbnailsContainer.className = 'other-character-thumbnails';
+  
+  // 各キャラクターのサムネイルを追加（現在のキャラクター以外）
+  for (const id in characters) {
+    if (id !== currentCharacterId.toString()) {
+      // ラッパーを作成
+      const thumbWrapper = document.createElement('div');
+      thumbWrapper.className = 'character-thumb-wrapper';
+      
+      // サムネイル画像
+      const thumb = document.createElement('img');
+      thumb.src = characters[id].image;
+      thumb.alt = characters[id].name;
+      thumb.className = 'other-character-thumb';
+      thumb.dataset.character = id;
+      
+      // 画像読み込みエラー時のフォールバック
+      thumb.onerror = function() {
+        this.src = 'images/default-avatar.svg';
+        console.warn('キャラクター画像の読み込みに失敗しました:', characters[id].image);
+      };
+      
+      // ツールチップを設定
+      thumb.title = characters[id].name.replace(/「|」/g, '');
+      
+      // キャラクター名ラベル
+      const characterLabel = document.createElement('span');
+      characterLabel.className = 'character-label';
+      characterLabel.textContent = characters[id].name.replace(/「|」/g, '');
+      
+      // クリックイベントを追加（ラッパー全体を対象に）
+      thumbWrapper.addEventListener('click', function() {
+        switchCharacter(id);
+      });
+      
+      thumbWrapper.appendChild(thumb);
+      thumbWrapper.appendChild(characterLabel);
+      thumbnailsContainer.appendChild(thumbWrapper);
+    }
+  }
+  
+  otherCharactersSection.appendChild(thumbnailsContainer);
+  
+  // チャットフッターに追加
+  const chatFooter = document.querySelector('.chat-footer');
+  chatFooter.insertBefore(otherCharactersSection, document.getElementById('back-to-selection'));
 }
 
 // 会話をリセットする関数
@@ -209,11 +388,57 @@ function hideChat() {
   // 入力フィールドをクリア
   messageInput.value = '';
 
+  // 全キャラクターの会話履歴をリセット
+  for (const characterId in conversations) {
+    resetConversation(characterId);
+  }
+
   // 選択画面に戻ったことを記録
   comingFromSelectionScreen = true;
 
   // スクロール位置をトップに
   window.scrollTo(0, 0);
+  
+  // モバイルサイズでスクロールを再有効化
+  if (window.innerWidth <= 480) {
+    // document.body.style.overflow = ''; // スクロール防止を削除
+  }
+}
+
+// キャラクター切り替え
+function switchCharacter(characterId) {
+  if (currentCharacterId === characterId) return;
+
+  const character = characters[characterId];
+  if (!character) return;
+
+  currentCharacterId = characterId;
+  selectedCharacterImg.src = character.image;
+
+  // チャット履歴をクリア
+  chatMessages.innerHTML = '';
+  
+  // 会話履歴があれば表示
+  if (conversations[characterId].messages.length > 0) {
+    conversations[characterId].messages.forEach(msg => {
+      addMessage(msg.content, msg.type);
+    });
+  } else {
+    // 初期メッセージを表示
+    addMessage(`${character.name}が選択されました。`, 'bot');
+    
+    // 会話履歴に追加
+    conversations[characterId].messages.push({
+      content: `${character.name}が選択されました。`,
+      type: 'bot'
+    });
+  }
+  
+  // 他のキャラクターとのチャット切り替え部分を更新
+  createOtherCharactersSection();
+  
+  // メッセージエリアを最上部にスクロール
+  chatMessages.scrollTop = 0;
 }
 
 // メッセージの送信
@@ -221,15 +446,19 @@ async function sendMessage() {
   const message = messageInput.value.trim();
   if (!message) return;
 
+  // 送信中は入力欄を無効化
+  messageInput.disabled = true;
+
   // ユーザーメッセージの表示
   addMessage(message, 'user');
   
   // 会話履歴に追加
-  conversations[currentCharacter.id].messages.push({
+  conversations[currentCharacterId].messages.push({
     content: message,
     type: 'user'
   });
   
+  // 入力欄をクリア
   messageInput.value = '';
   
   // 入力中の表示
@@ -239,15 +468,28 @@ async function sendMessage() {
     // リクエストパラメータの準備
     const requestParams = {
       inputs: {
-        input: currentCharacter.dify_input
+        input: characters[currentCharacterId].dify_input
       },
       query: message,
       response_mode: difyConfig.RESPONSE_MODE,
       user: USER_ID
     };
 
+    // キャラクター固有のモデル（ナレッジベース）を指定
+    // キャラクターIDに基づいて異なるモデル/ナレッジベースを使用
+    if (currentCharacterId === 1) {
+      requestParams.model = 'ryota_knowledge';  // ryota専用のナレッジベース
+    } else if (currentCharacterId === 2) {
+      requestParams.model = 'shinjinA_knowledge';  // 新人A専用のナレッジベース
+    } else if (currentCharacterId === 3) {
+      requestParams.model = 'tenshi_knowledge';  // 天使の猫ちゃん専用のナレッジベース
+    }
+
+    // デバッグ用にモデル情報も表示
+    console.log("使用するナレッジベース:", requestParams.model);
+
     // 会話IDがあり、空でなければ追加
-    const conversationId = conversations[currentCharacter.id].id;
+    const conversationId = conversations[currentCharacterId].id;
     if (conversationId) {
       requestParams.conversation_id = conversationId;
     }
@@ -260,7 +502,7 @@ async function sendMessage() {
       'Authorization': `Bearer ${difyConfig.API_KEY}`,
       'Content-Type': 'application/json'
     });
-    console.log("キャラクター情報:", currentCharacter);
+    console.log("キャラクター情報:", characters[currentCharacterId]);
     console.log("リクエストボディ:", JSON.stringify(requestParams, null, 2));
     console.log("***************************************************************");
 
@@ -273,6 +515,15 @@ async function sendMessage() {
       },
       body: JSON.stringify(requestParams)
     });
+
+    // APIリクエスト完了後に入力欄を再度有効化
+    messageInput.disabled = false;
+    setTimeout(() => {
+      // モバイルでは自動フォーカス
+      if (window.innerWidth <= 768) {
+        messageInput.focus();
+      }
+    }, 100);
 
     // デバッグ用：レスポンスのステータス情報
     console.log("********************* DIFY API レスポンス *********************");
@@ -291,7 +542,7 @@ async function sendMessage() {
         const errorJson = JSON.parse(errorText);
         if (errorJson.code === "not_found" && errorJson.message.includes("Conversation Not Exists")) {
           console.log("会話IDがリセットされました。新しい会話を開始します。");
-          conversations[currentCharacter.id].id = null;
+          conversations[currentCharacterId].id = null;
           
           // 入力中メッセージを削除
           removeLoadingMessage(loadingMessageId);
@@ -301,6 +552,7 @@ async function sendMessage() {
           delete newRequestParams.conversation_id;
           
           console.log("リトライリクエスト:", newRequestParams);
+          console.log("リトライ時のナレッジベース:", newRequestParams.model);
           
           const retryResponse = await fetch(`${difyConfig.API_ENDPOINT}/chat-messages`, {
             method: 'POST',
@@ -347,6 +599,9 @@ async function sendMessage() {
     console.error('Error:', error);
     removeLoadingMessage(loadingMessageId);
     
+    // 入力欄を再度有効化
+    messageInput.disabled = false;
+    
     // エラーメッセージを表示
     if (error.message.includes('404')) {
       addMessage('APIエンドポイントが見つかりません。URLが正しいか確認してください。', 'bot');
@@ -359,48 +614,45 @@ async function sendMessage() {
     }
     
     // 会話履歴に追加
-    conversations[currentCharacter.id].messages.push({
+    conversations[currentCharacterId].messages.push({
       content: '申し訳ありません。エラーが発生しました。',
       type: 'bot'
     });
     
-    // テスト用のモックレスポンス（API接続がうまくいかない場合のフォールバック）
+    // メッセージエリアを最下部までスクロール
     setTimeout(() => {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 100);
+    
+    // モバイルでは自動フォーカス
+    if (window.innerWidth <= 768) {
+      setTimeout(() => {
+        messageInput.focus();
+      }, 200);
+    }
+    
+    // フォールバック用のモックレスポンスを表示（API接続が失敗した場合）
+    setTimeout(() => {
+      // キャラクターごとのモックレスポンス
       const mockResponses = {
-        '1': [
-          'いや、めっちゃ分かりますよ〜！最初は僕もそんな感じでした☺️',
-          'ええ、それいいですね！一緒に頑張りましょう✨',
-          'そこまで気にしなくても大丈夫ですよ！コツコツ積み上げていけば、いつか結果は出ますから！'
-        ],
-        '2': [
-          'そうなんですよねぇ～！ワタシもビックリでしたぁ～✨',
-          'それ、めっちゃわかりますぅ～！実は私も最初は困ってましたぁ～👍',
-          'へぇ～！なるほどですねぇ～！そういう方法もあるんですね～🎯'
-        ],
-        '3': [
-          'そうやで✨ めっちゃ応援してるからね💖',
-          'ぜ～んぜん大丈夫やで！安心してな🌸',
-          'うちは安心して働けるお店やで🌸 気になることがあったら、いつでも聞いてな😊'
-        ]
+        '1': '申し訳ありませんが、現在サーバーに接続できません。また後でお試しください。😌',
+        '2': 'ごめんなさい、今ちょっと通信状況が良くないみたい… また後でお話ししましょう！✨',
+        '3': 'ごめんなぁ、今ちょっと繋がらへんわ。また後でな！🌸'
       };
       
-      const characterId = currentCharacter.id;
-      const responses = mockResponses[characterId] || mockResponses['1'];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      const fallbackResponse = mockResponses[currentCharacterId] || mockResponses['1'];
       
-      console.log("********************* モックレスポンス（フォールバック）表示 *********************");
-      console.log("キャラクターID:", characterId);
-      console.log("選択されたレスポンス:", randomResponse);
-      console.log("******************************************************************************");
-      
-      // モックレスポンスを表示
-      addMessage("[モックレスポンス] " + randomResponse, 'bot');
+      // 会話履歴に既にエラーメッセージがあるが、ユーザーフレンドリーなメッセージも追加
+      addMessage(fallbackResponse, 'bot');
       
       // 会話履歴に追加
-      conversations[currentCharacter.id].messages.push({
-        content: "[モックレスポンス] " + randomResponse,
+      conversations[currentCharacterId].messages.push({
+        content: fallbackResponse,
         type: 'bot'
       });
+      
+      // スクロール位置を調整
+      chatMessages.scrollTop = chatMessages.scrollHeight;
     }, 1000);
   }
 }
@@ -416,14 +668,9 @@ function showLoadingMessage() {
   contentElement.textContent = '入力中...';
 
   const avatarElement = document.createElement('img');
-  avatarElement.src = currentCharacter.image;
-  avatarElement.alt = currentCharacter.name;
-  avatarElement.style.width = '40px';
-  avatarElement.style.height = '40px';
-  avatarElement.style.borderRadius = '50%';
-  avatarElement.style.objectFit = 'contain';
-  avatarElement.style.backgroundColor = 'rgba(20, 20, 30, 0.8)';
-  avatarElement.style.padding = '2px';
+  avatarElement.src = characters[currentCharacterId].image;
+  avatarElement.alt = characters[currentCharacterId].name;
+  avatarElement.classList.add('bot-avatar');
   
   messageElement.appendChild(avatarElement);
   messageElement.appendChild(contentElement);
@@ -472,13 +719,13 @@ async function handleStreamingResponse(response) {
           } else if (data.event === 'message_end') {
             // 会話IDを保存
             if (data.conversation_id) {
-              conversations[currentCharacter.id].id = data.conversation_id;
-              console.log("会話ID保存(ストリーミング):", currentCharacter.id, data.conversation_id);
+              conversations[currentCharacterId].id = data.conversation_id;
+              console.log("会話ID保存(ストリーミング):", currentCharacterId, data.conversation_id);
             }
             
             // 会話履歴に完全なメッセージを追加
             if (botResponse) {
-              conversations[currentCharacter.id].messages.push({
+              conversations[currentCharacterId].messages.push({
                 content: botResponse,
                 type: 'bot'
               });
@@ -508,28 +755,29 @@ function updateOrAddBotMessage(content) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', 'bot', 'streaming');
     
+    const avatarElement = document.createElement('img');
+    avatarElement.src = characters[currentCharacterId].image;
+    avatarElement.alt = characters[currentCharacterId].name;
+    avatarElement.classList.add('bot-avatar');
+    avatarElement.onerror = function() {
+      // 画像読み込みエラー時のフォールバック
+      this.src = 'images/default-avatar.svg';
+      console.warn('キャラクター画像の読み込みに失敗しました:', characters[currentCharacterId].image);
+    };
+    
     const contentElement = document.createElement('div');
     contentElement.classList.add('message-content');
     // 改行コードを<br>タグに変換
     contentElement.innerHTML = content.replace(/\n/g, '<br>');
     
-    const avatarElement = document.createElement('img');
-    avatarElement.src = currentCharacter.image;
-    avatarElement.alt = currentCharacter.name;
-    avatarElement.style.width = '40px';
-    avatarElement.style.height = '40px';
-    avatarElement.style.borderRadius = '50%';
-    avatarElement.style.objectFit = 'contain';
-    avatarElement.style.backgroundColor = 'rgba(20, 20, 30, 0.8)';
-    avatarElement.style.padding = '2px';
-    
+    // ボットメッセージは左側からアバターを配置
     messageElement.appendChild(avatarElement);
     messageElement.appendChild(contentElement);
     chatMessages.appendChild(messageElement);
   }
   
   // アニメーション付きでスクロール
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  scrollToBottom();
 }
 
 // ブロッキングレスポンスの処理
@@ -548,15 +796,15 @@ async function handleBlockingResponse(response) {
       
       // 会話IDを保存
       if (data.conversation_id) {
-        conversations[currentCharacter.id].id = data.conversation_id;
-        console.log("会話ID保存:", currentCharacter.id, data.conversation_id);
+        conversations[currentCharacterId].id = data.conversation_id;
+        console.log("会話ID保存:", currentCharacterId, data.conversation_id);
       }
       
       // メッセージを表示
       addMessage(data.answer, 'bot');
       
       // 会話履歴に追加
-      conversations[currentCharacter.id].messages.push({
+      conversations[currentCharacterId].messages.push({
         content: data.answer,
         type: 'bot'
       });
@@ -565,7 +813,7 @@ async function handleBlockingResponse(response) {
       addMessage('エラーが発生しました: ' + (data.message || '不明なエラー'), 'bot');
       
       // 会話履歴に追加
-      conversations[currentCharacter.id].messages.push({
+      conversations[currentCharacterId].messages.push({
         content: 'エラーが発生しました: ' + (data.message || '不明なエラー'),
         type: 'bot'
       });
@@ -575,7 +823,7 @@ async function handleBlockingResponse(response) {
     addMessage('申し訳ありません。エラーが発生しました: ' + error.message, 'bot');
     
     // 会話履歴に追加
-    conversations[currentCharacter.id].messages.push({
+    conversations[currentCharacterId].messages.push({
       content: '申し訳ありません。エラーが発生しました。',
       type: 'bot'
     });
@@ -603,30 +851,38 @@ function addMessage(message, type) {
 
   if (type === 'bot') {
     const avatarElement = document.createElement('img');
-    avatarElement.src = currentCharacter.image;
-    avatarElement.alt = currentCharacter.name;
-    avatarElement.style.width = '40px';
-    avatarElement.style.height = '40px';
-    avatarElement.style.borderRadius = '50%';
-    avatarElement.style.objectFit = 'contain';
-    avatarElement.style.backgroundColor = 'rgba(20, 20, 30, 0.8)';
-    avatarElement.style.padding = '2px';
+    avatarElement.src = characters[currentCharacterId].image;
+    avatarElement.alt = characters[currentCharacterId].name;
+    avatarElement.classList.add('bot-avatar');
+    avatarElement.onerror = function() {
+      // 画像読み込みエラー時のフォールバック
+      this.src = 'images/default-avatar.svg';
+      console.warn('キャラクター画像の読み込みに失敗しました:', characters[currentCharacterId].image);
+    };
     messageElement.appendChild(avatarElement);
+    messageElement.appendChild(contentElement);
+  } else {
+    // ユーザーメッセージの場合は、先にコンテンツを追加
+    messageElement.appendChild(contentElement);
   }
 
-  messageElement.appendChild(contentElement);
   chatMessages.appendChild(messageElement);
 
   // アニメーション付きでスクロール
   setTimeout(() => {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    scrollToBottom();
   }, 100);
+
+  // メッセージ追加後にレイアウトを調整
+  setTimeout(() => {
+    adjustMessageLayout();
+  }, 10);
 }
 
 // アクティブなサムネイルの更新
 function updateActiveThumbnail() {
   characterThumbnails.forEach((thumb) => {
-    if (thumb.dataset.character === currentCharacter.id) {
+    if (thumb.dataset.character === currentCharacterId.toString()) {
       thumb.classList.add('active');
     } else {
       thumb.classList.remove('active');
@@ -634,33 +890,74 @@ function updateActiveThumbnail() {
   });
 }
 
-// キャラクター切り替え
-function switchCharacter(characterId) {
-  if (currentCharacter.id === characterId) return;
-
-  const character = characters[characterId];
-  if (!character) return;
-
-  currentCharacter = character;
-  selectedCharacterImg.src = character.image;
-  updateActiveThumbnail();
-
-  // チャット履歴をクリア
+// 会話履歴を表示する関数
+function displayConversationHistory() {
+  // 既存の会話履歴をクリア
   chatMessages.innerHTML = '';
   
   // 会話履歴があれば表示
-  if (conversations[characterId].messages.length > 0) {
-    conversations[characterId].messages.forEach(msg => {
+  if (conversations[currentCharacterId].messages.length > 0) {
+    conversations[currentCharacterId].messages.forEach(msg => {
       addMessage(msg.content, msg.type);
     });
   } else {
     // 初期メッセージを表示
-    addMessage(`${character.name}が選択されました。`, 'bot');
+    addMessage(`${characters[currentCharacterId].name}が選択されました。`, 'bot');
     
     // 会話履歴に追加
-    conversations[characterId].messages.push({
-      content: `${character.name}が選択されました。`,
+    conversations[currentCharacterId].messages.push({
+      content: `${characters[currentCharacterId].name}が選択されました。`,
       type: 'bot'
     });
+  }
+  
+  // アクティブなサムネイルを更新
+  updateActiveThumbnail();
+  
+  // メッセージエリアを最上部にスクロール
+  chatMessages.scrollTop = 0;
+}
+
+// 会話履歴を保存する関数
+function saveConversationHistory() {
+  // 既存の会話履歴を保存
+  conversationHistory = {
+    id: conversations[currentCharacterId].id,
+    messages: conversations[currentCharacterId].messages.map(msg => ({ ...msg })),
+    hasStarted: conversations[currentCharacterId].hasStarted
+  };
+}
+
+// メッセージストリーミング処理関数
+async function messageStreaming(message, messageElement) {
+  // ストリーミング完了後
+  streamingInProgress = false;
+  messageElement.classList.remove('loading');
+  messageElement.classList.remove('streaming');
+  
+  // ストリーミング完了後にレイアウトを調整
+  adjustMessageLayout();
+  scrollToBottom();
+}
+
+// ウィンドウのリサイズイベントリスナー（存在しない場合のみ追加）
+if (!window.hasOwnProperty('resizeListenerAdded')) {
+  window.addEventListener('resize', () => {
+    // iOSのビューポート高さを設定（もし関数が存在する場合）
+    if (typeof setViewportHeight === 'function') {
+      setViewportHeight();
+    }
+    // メッセージレイアウトを調整
+    adjustMessageLayout();
+    // スクロール位置を調整
+    scrollToBottom();
+  });
+  window.resizeListenerAdded = true;
+}
+
+// スクロールを最下部に移動する関数
+function scrollToBottom() {
+  if (chatMessages) {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 }
